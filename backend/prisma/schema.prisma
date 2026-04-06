@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model DegreeProgram {
+  id                   String                @id @default(uuid())
+  name                 String
+  college              String
+  totalCreditsRequired Int
+
+  users                User[]
+  requirementCategories RequirementCategory[]
+
+  @@map("degree_programs")
+}
+
+model User {
+  id              String   @id @default(uuid())
+  email           String   @unique
+  username        String   @unique
+  passwordHash    String
+  degreeProgramId String
+  createdAt       DateTime @default(now())
+
+  degreeProgram   DegreeProgram @relation(fields: [degreeProgramId], references: [id])
+  semesters       Semester[]
+
+  @@map("users")
+}
+
+model Semester {
+  id        String   @id @default(uuid())
+  userId    String
+  name      String
+  order     Int
+  createdAt DateTime @default(now())
+
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plannedCourses PlannedCourse[]
+
+  @@unique([userId, order])
+  @@map("semesters")
+}
+
+model RequirementCategory {
+  id              String @id @default(uuid())
+  degreeProgramId String
+  name            String
+  minCredits      Int
+  tier            String // "major" or "degree"
+
+  degreeProgram DegreeProgram @relation(fields: [degreeProgramId], references: [id])
+  courses       Course[]
+
+  @@map("requirement_categories")
+}
+
+model Course {
+  id             String  @id @default(uuid())
+  subject        String
+  number         String
+  title          String
+  credits        Int
+  normalizedCode String
+  categoryId     String
+  isCustom       Boolean @default(false)
+
+  category       RequirementCategory @relation(fields: [categoryId], references: [id])
+  plannedCourses PlannedCourse[]
+
+  // Self-referential many-to-many for prerequisites
+  prerequisites   Course[] @relation("CoursePrerequisites")
+  prerequisiteOf  Course[] @relation("CoursePrerequisites")
+
+  @@map("courses")
+}
+
+model PlannedCourse {
+  id         String @id @default(uuid())
+  semesterId String
+  courseId   String
+
+  semester Semester @relation(fields: [semesterId], references: [id], onDelete: Cascade)
+  course   Course   @relation(fields: [courseId], references: [id])
+
+  @@unique([semesterId, courseId])
+  @@map("planned_courses")
+}
