@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import { config } from "./config";
 import { errorHandler } from "./middleware/errorHandler";
+import authRoutes from "./routes/authRoutes";
 
 const app = express();
 
@@ -13,7 +14,8 @@ app.get("/api/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
-// Routes will be registered here
+// Routes
+app.use("/api/auth", authRoutes);
 
 app.use(errorHandler);
 
